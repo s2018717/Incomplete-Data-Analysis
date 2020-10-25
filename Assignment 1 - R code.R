@@ -128,25 +128,16 @@ ind_mis = which(is.na(databp$recovtime))
 fit = lm(recovtime ~ logdose + bloodp, data = databp)
 summary(fit)
 predicted = predict(fit, newdata = databp)
-predicted
 
-# calculate squared difference
+# find the index of the donor by calculate the minimal squared difference, and replace every missing value
 
-sd_4 = (predicted[-ind_mis]-predicted[4])^2 
-sd_10 = (predicted[-ind_mis]-predicted[10])^2 
-sd_22 = (predicted[-ind_mis]-predicted[22])^2 
+hd = databp
+for (i in ind_mis){
+        donor = as.integer(names(which.min((predicted[ind] - predicted[i])^2)))
+        hd$recovtime[i] = databp$recovtime[donor]
+}
 
-# find the index of the donor
-which.min(sd_4)
-which.min(sd_10)
-which.min(sd_22)
-
-# replace every missing value
-rechd = databp$recovtime
-rechd[4] = predicted[6]
-rechd[10] = predicted[2]
-rechd[22] = predicted[17]
-
+rechd = hd$recovtime
 mhd <- mean(rechd); sehd <- sd(rechd)/sqrt(n)
 mhd; sehd
 corrdhd = cor(rechd, databp$logdose)
