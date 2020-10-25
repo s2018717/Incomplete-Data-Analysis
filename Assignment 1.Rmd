@@ -8,6 +8,7 @@ author:
 
 ```{r setup, include=FALSE}
 library(MASS)
+n = 500
 ```
 
 ### 3(a) a = 2 and b = 0
@@ -53,9 +54,9 @@ predicted_sri = predict(fit, newdata = df_Y) + rnorm(nrow(df_Y), 0, sigma(fit))
 Y_sri = ifelse(is.na(df_Y$Y2_MAR), predicted_sri, df_Y$Y2_MAR)
 
 plot(density(Y2), lwd = 2, col = "blue", xlab = expression(Y[2]),
-     main = "Stochastic Regression Imputation", ylim = c(0, 0.25))
+     main = "Stochastic Regression Imputation", ylim = c(0, 0.3))
 lines(density(Y_sri), lwd = 2, col = "red")
-legend(2, 0.25, legend = c("Complete data", "Completed (after imputation) data"),
+legend(5, 0.3, legend = c("Complete data", "Completed (after imputation) data"),
        col = c("blue", "red"), lty = c(1,1), lwd = c(2,2), bty ="n")
 
 ```
