@@ -1,0 +1,111 @@
+---
+title: "Assignment 2"
+output: html_document
+---
+
+## 2(b)
+
+```{r Q2}
+load("dataex2.Rdata")
+library(maxLik)
+
+log_like <- function(mu, data){
+  x <- data[,1]; r <- data[,2]
+  sum(r*log(dnorm(x, mean = mu, sd = 1.5)) + (1-r)*log(pnorm(x, mean = mu, sd = 1.5)))
+}
+
+mle <- maxLik(logLik = log_like, data = dataex2, start = c(mu = 0))
+summary(mle)
+```
+
+## 4
+
+```{r Q4}
+load("dataex4.Rdata")
+
+ind_mis = which(is.na(dataex4$Y))
+x = dataex4$X
+x_m = dataex4$X[-ind_mis]
+x_n = dataex4$X[ind_mis]
+y_obs = dataex4$Y[-ind_mis]
+y_mis = dataex4$Y[ind_mis]
+
+# E-step
+
+p <- function(beta,x){
+  beta0 <- beta[1]
+  beta1 <- beta[2]
+  exp(beta0 + x*beta1)/(1 + exp(beta0 + x*beta1))
+}
+
+Q <- function(beta){
+  beta0 <- beta[1]
+  beta1 <- beta[2]
+  -sum(y_obs*(beta0 + x_m*beta1)) + sum(log(1 + exp(beta0 + x*beta1))) - sum(p(beta.old, x_n) * (beta0 + x_n*beta1))
+}
+
+# M-step
+
+diff <- 1
+eps <- 0.00001
+beta.old <- c(0, 0)
+while(diff > eps){
+  opt <- optim(beta.old, Q)
+  beta <- opt$par
+  diff <- sqrt(sum((beta.old - beta)^2))
+  beta.old <- beta
+}
+opt
+
+```
+
+##5(b)
+
+You can also embed plots, for example:
+
+```{r Q5}
+load("dataex5.Rdata")
+
+em.mixture <- function(y, theta0, eps){
+  n <- length(y)
+  theta <- theta0
+  p <- theta[1]
+  mu <- theta[2]
+  sigma <- theta[3]
+  lambda <- theta[4]
+  diff <- 1
+  
+  while(diff > eps){
+    theta.old <- theta
+    
+    #E-step
+    ptilde1 <- p * dlnorm(y, meanlog = mu, sdlog = sigma)
+    ptilde2 <- (1 - p) * dexp(y, rate = lambda)
+    ptilde <- ptilde1/(ptilde1 + ptilde2)
+    
+    #M-step
+    p <- mean(ptilde)
+    mu <- sum(log(y)*ptilde)/sum(ptilde)
+    sigma <- sqrt(sum(((log(y) - mu)^2)*ptilde)/sum(ptilde))
+    lambda <- sum((1 - ptilde))/sum(y*(1 - ptilde))
+    theta <- c(p, mu, sigma, lambda)
+    diff <- sum(abs(theta - theta.old))
+  }
+  return(theta)
+}
+
+res <- em.mixture(y = dataex5, c(0.1, 1, 0.5, 2), 0.00001)
+p <- res[1]
+mu <- res[2]
+sigma2 <- res[3]^2
+lambda <- res[4]
+p; mu; sigma2; lambda
+
+hist(dataex5, main = "Data of the mixture distribution",
+     xlab = "Value",
+     ylab = "Density",
+     cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.4,
+     freq = F, ylim = c(0,0.2))
+curve(p*dlnorm(x, mu, sigma2) + (1 - p)*dexp(x, lambda),
+      add = TRUE, lwd = 2, col = "blue2")
+```
