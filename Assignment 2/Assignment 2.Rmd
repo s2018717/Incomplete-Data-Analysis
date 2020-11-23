@@ -61,8 +61,6 @@ opt
 
 ##5(b)
 
-You can also embed plots, for example:
-
 ```{r Q5}
 load("dataex5.Rdata")
 
