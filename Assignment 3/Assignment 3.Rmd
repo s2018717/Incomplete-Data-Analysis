@@ -1,0 +1,179 @@
+---
+title: "Assignment 2"
+author: "Yang Yang"
+date: "2020/12/21"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(mice)
+```
+
+## 1(a)
+
+```{r Q1(a)}
+n = nrow(nhanes)
+sum = n - nrow(cc(nhanes))
+sum/n
+```
+
+## 1(b)
+
+```{r Q1(b)}
+imps = mice(nhanes, seed = 1, printFlag = FALSE)
+fits = with(imps, lm(bmi ~ age + hyp + chl))
+ests = pool(fits)
+ests
+```
+
+## 1(c)
+
+```{r Q1(c)}
+ests_2 = pool(with(mice(nhanes, seed = 2, printFlag = FALSE), lm(bmi ~ age + hyp + chl)))
+ests_2
+ests_3 = pool(with(mice(nhanes, seed = 3, printFlag = FALSE), lm(bmi ~ age + hyp + chl)))
+ests_3
+ests_4 = pool(with(mice(nhanes, seed = 4, printFlag = FALSE), lm(bmi ~ age + hyp + chl)))
+ests_4
+ests_5 = pool(with(mice(nhanes, seed = 5, printFlag = FALSE), lm(bmi ~ age + hyp + chl)))
+ests_5
+ests_6 = pool(with(mice(nhanes, seed = 6, printFlag = FALSE), lm(bmi ~ age + hyp + chl)))
+ests_6
+```
+
+## 1(d)
+
+```{r Q1(d)}
+ests1_m_100 = pool(with(mice(nhanes, seed = 1, printFlag = FALSE, m = 100), lm(bmi ~ age + hyp + chl)))
+summary(ests1_m_100, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+ests2_m_100 = pool(with(mice(nhanes, seed = 2, printFlag = FALSE, m = 100), lm(bmi ~ age + hyp + chl)))
+summary(ests2_m_100, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+ests3_m_100 = pool(with(mice(nhanes, seed = 3, printFlag = FALSE, m = 100), lm(bmi ~ age + hyp + chl)))
+summary(ests3_m_100, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+ests4_m_100 = pool(with(mice(nhanes, seed = 4, printFlag = FALSE, m = 100), lm(bmi ~ age + hyp + chl)))
+summary(ests4_m_100, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+ests5_m_100 = pool(with(mice(nhanes, seed = 5, printFlag = FALSE, m = 100), lm(bmi ~ age + hyp + chl)))
+summary(ests5_m_100, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+ests6_m_100 = pool(with(mice(nhanes, seed = 6, printFlag = FALSE, m = 100), lm(bmi ~ age + hyp + chl)))
+summary(ests6_m_100, conf.int = TRUE)[, c(2, 3, 6, 7, 8)]
+```
+
+## 2
+
+```{r Q2}
+load('dataex2.Rdata') # Loading in datasets
+# stochastic regression imputation 
+ecp_sri = 0 # empirical coverage probability
+for (i in 1:100) {
+  imps_sri = mice(dataex2[ , , i], m = 20, seed = 1, printFlag = FALSE, method = "norm.nob")
+  sri = summary(pool(with(imps_sri, lm(Y ~ X))), conf.int = TRUE)
+  if(sri[2, c(7)] <= 3 & sri[2, c(8)]>= 3) {
+    ecp_sri = ecp_sri + 1
+  }
+}
+ecp_sri/100
+
+# bootstrap
+ecp_boot = 0 # empirical coverage probability
+for (i in 1:100) {
+  imps_sri = mice(dataex2[ , , i], m = 20, seed = 1, printFlag = FALSE, method = "norm.boot")
+  sri = summary(pool(with(imps_sri, lm(Y ~ X))), conf.int = TRUE)
+  if(sri[2, c(7)] <= 3 & sri[2, c(8)]>= 3) {
+    ecp_boot = ecp_boot + 1
+  }
+}
+ecp_boot/100
+```
+
+# 4(a)
+
+```{r Q4(a)}
+load("dataex4.Rdata")
+imps = mice(dataex4, m = 50, seed = 1, printFlag = FALSE)
+ests = pool(with(imps, lm(y ~ x1 + x2 + x1*x2)))
+summary(ests, conf.int = TRUE)[, c(2, 3, 6, 7, 8)] 
+```
+
+# 4(b)
+
+```{r Q4(b)}
+dataex4$x3 = dataex4$x1 * dataex4$x2
+imp0 = mice(dataex4, maxit = 0, m = 50, seed = 1) 
+meth = imp0$method
+meth["x3"] = "~I(x1*x2)"
+pred = imp0$predictorMatrix 
+# x3 will not be used as predictor of x1 and x2
+pred[c("x1", "x2"), "x3"] = 0
+# avoid multi-collinearity
+pred[, c("x1", "x2")] = 0
+pred["x1", "x2"] = 1
+pred["x2", "x1"] = 1
+
+# MI method
+imp = mice(dataex4, method = meth, predictorMatrix = pred, m = 50, seed = 1, printFlag = FALSE)
+ests = with(imp, lm(y ~ x1 + x2 + x3))
+summary(pool(ests), conf.int=TRUE)[,c(1,2,7,8)]
+```
+
+# 4(c)
+
+```{r Q4(c)}
+# Just another variable imputation
+imps = mice(dataex4, m = 50, seed = 1, printFlag = FALSE)
+ests = with(imps, lm(y ~ x1 + x2 + x3))
+summary(pool(ests), conf.int=TRUE)[,c(1,2,7,8)]
+```
+
+# 5
+
+```{r Q5}
+load("NHANES2.Rdata")
+dim(NHANES2)
+str(NHANES2)
+summary(NHANES2)
+mdpat_mice = md.pattern(NHANES2)
+mdpat_mice
+install.packages("JointAI")
+library(JointAI)
+md_pattern(NHANES, pattern = FALSE, color = c('#34111b', '#e30f41'))
+par(mar = c(3, 3, 2, 1), mgp = c(2, 0.6, 0))
+plot_all(NHANES2, breaks = 30, ncol = 4)
+
+imp0 = mice(NHANES2, maxit = 0)
+imp0
+meth <- imp0$method
+meth["hgt"] <- "norm" 
+post = imp0$post
+post["hgt"] <- "imp[[j]][,i] <- squeeze(imp[[j]][,i], c(1.2, 2.0))"
+
+
+imp = mice(NHANES2, method = meth, maxit = 20, m = 30, seed = 1, printFlag = FALSE)
+imp$loggedEvents
+plot(imp, layout = c(4,4))
+densityplot(imp)
+
+
+densityplot(imp, ~hgt|gender)
+
+library(devtools)
+library(reshape2)
+library(RColorBrewer)
+library(ggplot2)
+source_url("https://gist.githubusercontent.com/NErler/0d00375da460dd33839b98faeee2fdab/raw/c6f537ecf80eddcefd94992ec7926aa57d454536/propplot.R")
+propplot(imp)
+
+fit = with(imp, lm(wgt ~ gender + age + hgt + WC)) 
+summary(fit$analyses[[1]]) 
+
+comp1 = complete(imp, 1)
+plot(fit$analyses[[1]]$fitted.values, residuals(fit$analyses[[1]]), xlab = "Fitted values", ylab = "Residuals") 
+abline(h = 0, col = "red", lty = 5)
+
+qqnorm(rstandard(fit$analyses[[1]]), xlim = c(-4, 4), ylim = c(-6, 6))
+qqline(rstandard(fit$analyses[[1]]), col = 2)
+
+pooled_ests <- pool(fit)
+summary(pooled_ests, conf.int = TRUE) 
+pool.r.squared(pooled_ests, adjusted = TRUE)
+
+```
